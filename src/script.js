@@ -84,7 +84,6 @@ function createAndWriteUsers(playlists, songs) {
     liked_songs: []
   }))
   
-  // TODO fix bug: sometimes an user likes the same song twice
   const usersIndexes = new Set(users.map((u, i) => i))
   songs.forEach(song => {
     for(let i = 0; i < song.likes_count; i++) {

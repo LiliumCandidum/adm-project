@@ -25,8 +25,8 @@ CREATE TABLE adm.song_likes (
     artist text,
     likes_count int,
     genre text,
-    PRIMARY KEY ((songCode), likes_count) 
-) WITH CLUSTERING ORDER BY (likes_count DESC);
+    PRIMARY KEY (songCode) 
+);
 
 CREATE INDEX ON song_likes(artist);
 
@@ -68,12 +68,7 @@ COPY adm.users (username, email, password, playlists, liked_songs) FROM '/bitnam
 SELECT likes_count FROM song_likes WHERE songCode = '1hr5Y2i4NlE3LPvQZ9Q5Ao';
 
 // Query 2
-// RIVEDERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SELECT *
-FROM song_likes
-WHERE artist = 'Ed Sheeran'
-ORDER BY likes_count DESC
-LIMIT 3;
+SELECT * FROM song_likes WHERE artist = 'Ed Sheeran';
 
 // Query 3
 SELECT liked_songs FROM users WHERE email = 'dialogueplayful@email.it';

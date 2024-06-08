@@ -2,22 +2,20 @@
 
 docker pull cassandra:latest
 
-docker network create cassandra 
+docker network create cassandra
 
-docker run --rm -d --name cassandra --hostname cassandra --network cassandra cassandra
-
-Con volume:
+With a volume (execute in this project root):
 docker run --rm -d -v $(pwd)/tables:/bitnami --name cassandra --hostname cassandra --network cassandra cassandra
 
 ## for writing queries 
 
-docker exec -it cassandra /bin/sh
+docker exec -u root -it cassandra /bin/sh
 
 cqlsh
 
 -- runnare comando x creare keyspace --
 
-Usa keyspace:
+Use keyspace:
 use adm
 
 Get tables:
@@ -32,10 +30,10 @@ cp ./etc/cassandra/cqlshrc.sample $HOME/.cassandra
 Go in $HOME/.cassandra and rename file:
 mv cqlshrc.sample cqlshrc
 
-Edit cqlshrc file and set field_size_limit:
+Edit cqlshrc file and set field_size_limit (remove ;):
 [csv]
 ;; The size limit for parsed fields
-field_size_limit = 1000000000
+field_size_limit = 9223372036854775807
 
 
 ## copy files

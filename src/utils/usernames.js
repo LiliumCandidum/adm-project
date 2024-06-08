@@ -199,7 +199,6 @@ const usernames = [
   'vengefulparsnips',
   'liberatedcurry',
   'offendedcatnip',
-  'playfulcress',
 ]
 
 module.exports = {

@@ -5,17 +5,21 @@ const {usernames} = require('./utils/usernames')
 const DELIMITER = '|'
 const ARTIST_DESCRIPTION = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua'
 const SONG_URL = 'http://localhost:8080/song'
+const NAME_REGEX = /[\|\,]/g
+const MAX_LIKED_SONGS = 30
 
 function normalizeData(data) {
-  return data.map(val => {
-    if(typeof val === 'object') {
-      return JSON.stringify(val)
-    }
-    if(typeof val === 'string' && val.includes(DELIMITER)) {
-      return `"${val}"`
-    }
-    return val
-  })
+  return data
+    .map(val => {
+      if(typeof val === 'object') {
+        return JSON.stringify(val)
+      }
+      if(typeof val === 'string' && val.includes(DELIMITER)) {
+        return `"${val}"`
+      }
+      return val
+    })
+    .join(DELIMITER)+ '\n'
 }
 
 function getRandomInt(min, max) {
@@ -34,9 +38,7 @@ function writeArtists(artistsMap) {
   
   artists.forEach(artist => {
     const values =  normalizeData(Object.values(artist))
-    const newLine = values.join(DELIMITER)+ '\n'
-
-    writeStream.write(newLine)
+    writeStream.write(values)
   })
 
   writeStream.end()
@@ -56,18 +58,20 @@ function writeSongs(fileName, songsArray) {
   
   songsArray.forEach(song => {
     const values = normalizeData(Object.values(song))
-    const newLine = values.join(DELIMITER)+ '\n'
-
-    writeStream.write(newLine)
+    writeStream.write(values)
   })
 
   writeStream.end()
 
   writeStream.on('finish', () => {
-      console.log('finish writing ' + fileName)
+      console.log('finish writing ', fileName)
   }).on('error', (err) => {
       console.log(err)
   })
+}
+
+function getRandomUserIndex(set) {
+  return [...set][Math.floor(Math.random()*set.size)]
 }
 
 function createAndWriteUsers(playlists, songs) {
@@ -79,16 +83,15 @@ function createAndWriteUsers(playlists, songs) {
     playlists: playlists.splice(-3).map(([code, name]) => ({code, name})),
     liked_songs: []
   }))
-  const usersCount = users.length
-
+  
+  // TODO fix bug: sometimes an user likes the same song twice
+  const usersIndexes = new Set(users.map((u, i) => i))
   songs.forEach(song => {
-    const usersList = []
     for(let i = 0; i < song.likes_count; i++) {
-      let userIndex
-      do {
-        userIndex = getRandomInt(0, usersCount)
-      } while (usersList.includes(userIndex))
-      usersList.push(userIndex)
+      let userIndex = getRandomUserIndex(usersIndexes)
+      if(users[userIndex].liked_songs.length === MAX_LIKED_SONGS) {
+        usersIndexes.delete(userIndex)
+      }
 
       users[userIndex].liked_songs.push({
         code: song.songCode,
@@ -100,15 +103,13 @@ function createAndWriteUsers(playlists, songs) {
 
   // write on file
   const writeStream = fs.createWriteStream('./tables/users.csv')
-
+  
   const header = Object.keys(users[0]).join(DELIMITER) + '\n'
   writeStream.write(header)
-  
+
   users.forEach(user => {
     const values = normalizeData(Object.values(user))
-    const newLine = values.join(DELIMITER)+ '\n'
-
-    writeStream.write(newLine)
+    writeStream.write(values)
   })
 
   writeStream.end()
@@ -120,8 +121,9 @@ function createAndWriteUsers(playlists, songs) {
   })
 }
 
+
 function main() {
-  console.log('Starts reading songs')
+  console.log('Start reading songs')
 
   // Vedere readme.md per relazione index - colonna
   // Ci sono 11'003 artisti e 1139 playlist
@@ -130,14 +132,26 @@ function main() {
   const artists = new Map()
   const songs = []
   const songLikes = []
+  // Not more than MAX_LIKED_SONGS liked songs for user
+  const maxLikes = usernames.length * MAX_LIKED_SONGS
+  let currLikes = 0
+
+  // About 5k songs are duplicated in spotify_songs.csv file
+  const songsSet = new Set()
 
   fs.createReadStream('./dataset/spotify_songs.csv')
     .pipe(parse({delimiter: ','}))
     .on('data', row => {
+      if(songsSet.has(row[0])) {
+        return
+      }
+      songsSet.add(row[0])
+
       if(!columns) {
         columns = row
       } else {
-        const artistName = row[2]
+        const artistName = row[2].replace(NAME_REGEX, '-')
+        const albumName = row[5].replace(NAME_REGEX, '-')
   
         // Create / update artist
         // Albums are a map of {<albumCode>: <albumName>}
@@ -145,38 +159,47 @@ function main() {
         if(artistObj && !artistObj.albums[row[4]]) {
           artists.albums = {
             ...artists.albums, 
-            [row[4]]: row[5]
+            [row[4]]: albumName
           }
         } else {
           artists.set(artistName, {
-              name:artistName,
+              name: artistName,
               description: ARTIST_DESCRIPTION,
-              albums: {[row[4]]: row[5]},
+              albums: {[row[4]]: albumName},
               followers_count: getRandomInt(0, usernames.length + 1)
             })
         }
   
+        const songName = row[1].replace(NAME_REGEX, '-').replace(/[\[]/g, '(').replace(/[\]]/g, ')')
         // Create songs
         songs.push({
           songCode: row[0],
-          name: row[1],
+          name: songName,
           length: row[22],
           url: SONG_URL,
           genre: row[9],
           artist: artistName,
-          album: {code: row[4], name: row[5]},
+          album: {code: row[4], name: albumName},
         })
   
         // Create song_likes
+        let likes_count = 0
+        if(currLikes < maxLikes) {
+          likes_count = getRandomInt(0, 11)
+          if(currLikes + likes_count > maxLikes) {
+            likes_count = maxLikes - currLikes
+          }
+          currLikes += likes_count
+        }
         songLikes.push({
           songCode: row[0],
-          name: getRandomInt(0, 21),
+          name: songName,
           artist: artistName,
-          likes_count: row[3],
+          likes_count,
           genre: row[9]
         })
   
-        playlists.set(row[8], row[7])
+        playlists.set(row[8], row[7].replace(NAME_REGEX, '-'))
       }
     })
     .on('end', function() {

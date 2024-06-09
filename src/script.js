@@ -204,6 +204,10 @@ function main() {
     .on('end', function() {
       console.log('Finihed reading, starting writing artists and songs')
 
+      if (!fs.existsSync('./tables')){
+        fs.mkdirSync('./tables');
+    }
+
       writeArtists(artists)
       writeSongs('./tables/songs.csv', songs)
       writeSongs('./tables/song_likes.csv', songLikes)

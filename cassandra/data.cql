@@ -51,6 +51,11 @@ CREATE TABLE adm.users (
 );
 
 
+// Check tables have been created
+
+describe tables;
+
+
 // Import data ---------------------------------------------------
 
 COPY adm.artists (name, description, albums, followers_count) FROM '/bitnami/artists.csv' WITH DELIMITER='|' AND HEADER=TRUE;

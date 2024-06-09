@@ -1,40 +1,37 @@
-## set up cassandra
+## Set up cassandra
 
+#### Pull cassandra image
+
+```
 docker pull cassandra:latest
+```
 
+#### Create a network
+
+```
 docker network create cassandra
+```
+
+#### Run cassandra image
 
 With a volume (execute in this project root):
-docker run --rm -d -v $(pwd)/tables:/bitnami --name cassandra --hostname cassandra --network cassandra cassandra
+```
+docker run --rm -v $(pwd)/tables:/bitnami --name cassandra --hostname cassandra --network cassandra cassandra
+```
 
-## for writing queries 
+## Run CQL for writing queries 
 
+Before executing the following commands, make sure the cassandra container logged something like: 
+`...Created default superuser role 'cassandra'`
+
+#### Execute a shell on the container
+
+```
 docker exec -u root -it cassandra /bin/sh
+```
 
+#### Run CQL shell
+
+```
 cqlsh
-
--- runnare comando x creare keyspace --
-
-Use keyspace:
-use adm
-
-Get tables:
-describe tables
-
-## bigger field size (for users import)
-https://stackoverflow.com/questions/49971767/cannot-copy-csv-file-inside-a-cassandra-table (ultima risposta)
-
-From /bin/sh:
-cp ./etc/cassandra/cqlshrc.sample $HOME/.cassandra
-
-Go in $HOME/.cassandra and rename file:
-mv cqlshrc.sample cqlshrc
-
-Edit cqlshrc file and set field_size_limit (remove ;):
-[csv]
-;; The size limit for parsed fields
-field_size_limit = 9223372036854775807
-
-
-## copy files
-cp -r ./tables $HOME/adm
+```

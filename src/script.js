@@ -169,7 +169,12 @@ function main() {
             })
         }
   
-        const songName = row[1].replace(NAME_REGEX, '-').replace(/[\[]/g, '(').replace(/[\]]/g, ')')
+        const songName = row[1].replace(NAME_REGEX, '-').replace(/[\[]/g, '(').replace(/[\]]/g, ')').replace(/["]/g, '\'')
+
+        if(songName.includes('TROLLS')) {
+          console.log(songName)
+        }
+
         // Create songs
         songs.push({
           songCode: row[0],
